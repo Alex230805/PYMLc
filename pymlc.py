@@ -4,8 +4,8 @@ import tokenizer;
 import sys;
 import os;
 
-
 DEBUG:bool = False;
+
 
 def help():
     print("""PYMLc is a html simple parser written with the only intent of extracting informations 
@@ -64,6 +64,12 @@ def parameter_error(param: str, message: str):
     print(f"Wrong parameter argument for '{param}': {message}");
     exit(1);
 
+# TODO: fix that shi
+
+def parse_html(ctx:dict):
+    raise Exception("Rewrite the implementation of the parser, not recursive this time");
+    return ctx;
+
 def main(argv: [str]):
     dest:str="./out";
     src:str = "./"
@@ -121,9 +127,17 @@ def main(argv: [str]):
             f = open(fpath, "r");
             source:str = str(f.read());
             f.close();
-            tokenized_output: [int, [dict]] = tokenizer.parse_html(source);
+            tokenized_output: [int, [dict]] = tokenizer.html_lexer(source);
             if DEBUG: tokenizer.print_tokenizer_output(tokenized_output[1]);
             # TODO: continue the parser
+            
+            parse_ctx:dict = {
+                "src": source,
+                "out": "",
+                "tokens": tokenized_output
+            };
+            return_ctx = parse_html(parse_ctx); 
+            print(return_ctx["out"]);
 
         except Exception as ex:
             print(f"Error while parsing file: {ex}");
