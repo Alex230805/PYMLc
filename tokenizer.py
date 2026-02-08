@@ -30,6 +30,7 @@ token_table: dict = dict({
         "ARROW_RIGHT": ">",
         "CLOSE_SLASH": "/",
         "HTML_TAG_P": "p",
+        "HTML_TAG_B": "b",
         "HTML_TAG_A": "a",
         "HTML_TAG_H1": "h1",
         "HTML_TAG_H2": "h2",
@@ -45,6 +46,9 @@ token_table: dict = dict({
         "HTML_TAG_UL": "ul",
         "HTML_TAG_LI": "li",
         "HTML_TITLE": "title",
+        "HTML_PRE": "pre",
+        "HTML_SPAN": "span",
+        "HTML_SUP": "sup",
         "DOCTYPE": "!DOCTYPE",
         "ASSIGNMENT": "=",
         "DOUBLE_QUOTE": "\"",
@@ -52,6 +56,9 @@ token_table: dict = dict({
         "HTML_CLASS": "class",
         "HTML_SRC": "src",
         "HTML_HREF": "href",
+        "HTML_ID": "id",
+        "HTML_PARAM_TITLE": "title",
+        "HTML_META_TAG": "meta",
         "HTML_IMG": "img"
 });
 

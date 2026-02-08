@@ -3,6 +3,7 @@
 import tokenizer;
 import sys;
 import os;
+import time;
 
 DEBUG:bool = False;
 
@@ -56,6 +57,9 @@ Syntax:
         - text : raw format
         - mark : markdown format, titles will be preserved
 
+--debug: 
+
+    Output the tokenizer array used for parsing the content.
 
 """);
     exit(1);
@@ -64,10 +68,50 @@ def parameter_error(param: str, message: str):
     print(f"Wrong parameter argument for '{param}': {message}");
     exit(1);
 
-# TODO: fix that shi
+
 
 def parse_html(ctx:dict):
-    raise Exception("Rewrite the implementation of the parser, not recursive this time");
+    tracker:int = ctx["tokens"][0];
+    tag_open:bool = False;
+    status: int = tokenizer.INVALID_TAG;
+    current_token:int = ctx["tokens"][1][tracker]["token"];
+
+    start:int = 0;
+    length:int = 0;
+
+    stack:[int] = [];
+
+    while tracker < len(ctx["tokens"][1]):
+        if not tag_open:
+            status, ctx["tokens"] = tokenizer.has_valid_tag(ctx["tokens"]);
+            tracker = ctx["tokens"][0];
+            if tracker < len(ctx["tokens"][1]):
+                current_token = ctx["tokens"][1][tracker]["token"];
+            if status == tokenizer.TAG_OPEN:
+                tag_open = True;
+                stack.append(ctx["tokens"][1][tracker-1]["pos"]+1);
+            if status == tokenizer.TAG_CLOSE:
+                if len(stack) > 0:
+                    start = stack.pop(-1);
+                    length = (ctx["tokens"][1][tracker-4]["pos"]-1) - start;
+                    j:int = 0;
+                    while j <= length:
+                        ctx["out"] += ctx["src"][start+j];
+                        j+=1;
+                    ctx["out"] += "\n";
+                    stack = [];
+            if status == tokenizer.INVALID_TAG:
+                current_token:int = ctx["tokens"][1][tracker]["token"];
+                raise Exception(f"invalid tag at {ctx["tokens"][1][tracker]["pos"]}, pointing at tracker {tracker}: '{tokenizer.get_token_name_by_value(current_token)}': literal: '{tokenizer.get_token_lit_by_value(current_token)}'");
+
+        # search for the first token for the close tag
+        if tracker < len(ctx["tokens"][1]):
+            current_token = ctx["tokens"][1][tracker]["token"];
+        if tag_open and current_token == tokenizer.get_token_value_by_name("ARROW_LEFT"):
+            tag_open = False;
+            ctx["tokens"][0] = tracker;
+        else:
+            tracker += 1;
     return ctx;
 
 def main(argv: [str]):
@@ -107,6 +151,8 @@ def main(argv: [str]):
                 i+=1;
             else:
                 parameter_error("-s", "Not a valid source file directory");
+        elif argv[i] == "--debug":
+            DEBUG = True;
         else:
             file_list.append(argv[i]);
         i+=1;
@@ -124,26 +170,38 @@ def main(argv: [str]):
                 fpath = os.path.join(src,file);
             if not os.path.isfile(fpath):
                 raise Exception(f"The specified '{file}' is not a valid file");
+
+            message = f"Reading {fpath}".ljust(64);
+            print(f"{message}{time.asctime():>}");
             f = open(fpath, "r");
             source:str = str(f.read());
             f.close();
             tokenized_output: [int, [dict]] = tokenizer.html_lexer(source);
             if DEBUG: tokenizer.print_tokenizer_output(tokenized_output[1]);
-            # TODO: continue the parser
-            
             parse_ctx:dict = {
                 "src": source,
                 "out": "",
                 "tokens": tokenized_output
             };
-            return_ctx = parse_html(parse_ctx); 
-            print(return_ctx["out"]);
+            message = f"Parsing {fpath}".ljust(64);
+            print(f"{message}{time.asctime():>}");
+            # TODO: add the nested tag: <p>this is a <a>button</a></p>
+            # TODO: fix the exclusion of "meta" tags from the tokenization process
+            return_ctx = parse_html(parse_ctx);
+            fpath = os.path.join(dest, file.split(".")[0]+".txt");
+            
+            message = f"Writing down {fpath}".ljust(64);
+            print(f"{message}{time.asctime():>}");
+            f = open(fpath, "w");
+            f.write(return_ctx["out"]);
+            f.close();
+
+            print("Done!");
 
         except Exception as ex:
             print(f"Error while parsing file: {ex}");
             exit(1);
-
-
+        print("Coffe is ready sir!");
     return 0;
 
 
