@@ -80,7 +80,7 @@ def parse_html(ctx:dict):
     length:int = 0;
 
     stack:[int] = [];
-
+    
     while tracker < len(ctx["tokens"][1]):
         if not tag_open:
             status, ctx["tokens"] = tokenizer.has_valid_tag(ctx["tokens"]);
@@ -123,6 +123,7 @@ def main(argv: [str]):
     file_list: [str] = [];
     output_type: str = "text";
     i:int = 1;
+    DEBUG = False;
     if len(argv) == 1: print("Invalid parameter, run with '-h' for more informations."); exit(1);
     while i < len(argv):
         if argv[i] == "-h":
@@ -186,7 +187,6 @@ def main(argv: [str]):
             message = f"Parsing {fpath}".ljust(64);
             print(f"{message}{time.asctime():>}");
             # TODO: add the nested tag: <p>this is a <a>button</a></p>
-            # TODO: fix the exclusion of "meta" tags from the tokenization process
             return_ctx = parse_html(parse_ctx);
             fpath = os.path.join(dest, file.split(".")[0]+".txt");
             

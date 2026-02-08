@@ -26,6 +26,8 @@ UNDEFINED_TOKEN_NAME: str = "Not a token";
 # by the lexer. 
 
 token_table: dict = dict({
+        "HTML_META_TAG": "<meta",
+        "HTML_INLINE_CLOSE": "/>",
         "ARROW_LEFT": "<",
         "ARROW_RIGHT": ">",
         "CLOSE_SLASH": "/",
@@ -58,7 +60,6 @@ token_table: dict = dict({
         "HTML_HREF": "href",
         "HTML_ID": "id",
         "HTML_PARAM_TITLE": "title",
-        "HTML_META_TAG": "meta",
         "HTML_IMG": "img"
 });
 
@@ -89,6 +90,9 @@ def get_token_lit_by_value(token_value: int):
         if i[TOK_VAL] == token_value:
             return i[TOK_LIT];
     return UNDEFINED_TOKEN_NAME;
+
+def get_token_lit_by_name(token_name: str):
+    return get_token_lit_by_value(get_token_value_by_name(token_name));
 
 def get_token_val(i):
     return token_list[i][TOK_VAL];
@@ -137,11 +141,22 @@ def has_valid_tag(tokenized_output: [int, [dict]]):
 
 def html_lexer(source: str):
     tracker:int=0;
+
+    # exclude: a flag to exclude lines between two tokens while pushing the head token and the tail token, usefull for string literals inside "".
     exclude:bool = False;
+    # meta_exclude: a flag to exclude lines between two tokens without including the head token and the tail token
+    meta_exclude:bool = False;
+    
     tokenized_output: [dict] = [];
     exclude_list:set = {
-        get_token_lit_by_value(get_token_value_by_name("DOUBLE_QUOTE")),
-        get_token_lit_by_value(get_token_value_by_name("QUOTE"))
+        get_token_lit_by_name("DOUBLE_QUOTE"),
+        get_token_lit_by_name("QUOTE"),
+        get_token_lit_by_name("HTML_META_TAG")
+    };
+    exclude_list_end:set = {
+        get_token_lit_by_name("DOUBLE_QUOTE"),
+        get_token_lit_by_name("QUOTE"),
+        get_token_lit_by_name("HTML_INLINE_CLOSE")
     };
     while tracker < len(source):
         increment: int=1;
@@ -161,15 +176,22 @@ def html_lexer(source: str):
             if str(buffer).lower() == str(token_literal).lower():
                 # writing down tag as new token
                 if exclude:
-                    if str(buffer).lower() in exclude_list:
-                        token_cell = dict({
-                            "token": current_token,
-                            "pos": tracker,
-                            "len": len(token_literal)
-                        });
-                        exclude = False;
-                        increment = len(token_literal);
-                        end = True;
+                    if str(buffer).lower() in exclude_list_end:
+                        if str(buffer).lower() == get_token_lit_by_name("HTML_INLINE_CLOSE"):
+                            token_cell = None;
+                            exclude = False;
+                            meta_exclude = False;
+                            increment = len(token_literal);
+                            end = True;
+                        elif not meta_exclude:
+                            token_cell = dict({
+                                "token": current_token,
+                                "pos": tracker,
+                                "len": len(token_literal)
+                            });
+                            exclude = False;
+                            increment = len(token_literal);
+                            end = True;
                 else:
                     token_cell = dict({
                         "token": current_token,
@@ -180,8 +202,11 @@ def html_lexer(source: str):
                     end = True;
                     if str(buffer).lower() in exclude_list:
                         exclude = True;
+                        if str(buffer).lower() == get_token_lit_by_name("HTML_META_TAG"):
+                            token_cell = None;
+                            meta_exclude = True;
             i+=1;
-        if end:
+        if end and token_cell != None:
             tokenized_output.append(token_cell);
         tracker += increment;
     return [0, tokenized_output];
